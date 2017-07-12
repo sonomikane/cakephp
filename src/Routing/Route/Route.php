@@ -88,6 +88,13 @@ class Route
     protected $_extensions = [];
 
     /**
+     * A map of middleware names and the related objects.
+     *
+     * @var array
+     */
+    protected $_middleware = [];
+
+    /**
      * Valid HTTP methods.
      *
      * @var array
@@ -387,16 +394,17 @@ class Route
      * false will be returned.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The URL to attempt to parse.
+     * @param array $registeredMiddleware An array of registered middleware names.
      * @return array|false An array of request parameters, or false on failure.
      */
-    public function parseRequest(ServerRequestInterface $request)
+    public function parseRequest(ServerRequestInterface $request, $registeredMiddleware)
     {
         $uri = $request->getUri();
         if (isset($this->options['_host']) && !$this->hostMatches($uri->getHost())) {
             return false;
         }
 
-        return $this->parse($uri->getPath(), $request->getMethod());
+        return $this->parse($uri->getPath(), $request->getMethod(), $registeredMiddleware);
     }
 
     /**
@@ -407,10 +415,11 @@ class Route
      *
      * @param string $url The URL to attempt to parse.
      * @param string $method The HTTP method of the request being parsed.
+     * @param array $registeredMiddleware An array of registered middleware names.
      * @return array|false An array of request parameters, or false on failure.
      * @deprecated 3.4.0 Use/implement parseRequest() instead as it provides more flexibility/control.
      */
-    public function parse($url, $method = '')
+    public function parse($url, $method = '', $registeredMiddleware = [])
     {
         if (empty($this->_compiledRoute)) {
             $this->compile();
@@ -476,6 +485,19 @@ class Route
             }
         }
         $route['_matchedRoute'] = $this->template;
+
+        // Add matching middleware to the route
+        $resolved = [];
+        foreach ($this->_middleware as $name) {
+            if (!isset($resolved[$name])) {
+                if (in_array($name, $registeredMiddleware)) {
+                    $resolved[] = $name;
+                }
+            }
+        }
+        if (!empty($resolved)) {
+            $route['_matchedMiddleware'] = $resolved;
+        }
 
         return $route;
     }
@@ -824,6 +846,19 @@ class Route
         }
 
         return $this->template;
+    }
+
+    /**
+     * Store middleware that should be attached to this route
+     *
+     * @param string[] $middleware The middleware names to add for the route.
+     * @return $this
+     */
+    public function applyMiddleware(...$middleware)
+    {
+        $this->_middleware = $middleware;
+
+        return $this;
     }
 
     /**

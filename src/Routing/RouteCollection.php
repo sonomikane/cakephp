@@ -149,7 +149,12 @@ class RouteCollection
             }
             /* @var \Cake\Routing\Route\Route $route */
             foreach ($this->_paths[$path] as $route) {
-                $r = $route->parse($url, $method);
+                $r = $route->parse($url, $method, array_keys($this->_middleware));
+
+                if (isset($r['_matchedMiddleware'])) {
+                    $this->applyMiddleware($r['_matchedRoute'], $r['_matchedMiddleware']);
+                }
+
                 if ($r === false) {
                     continue;
                 }
@@ -189,7 +194,12 @@ class RouteCollection
 
             /* @var \Cake\Routing\Route\Route $route */
             foreach ($this->_paths[$path] as $route) {
-                $r = $route->parseRequest($request);
+                $r = $route->parseRequest($request, array_keys($this->_middleware));
+
+                if (isset($r['_matchedMiddleware'])) {
+                    $this->applyMiddleware($r['_matchedRoute'], $r['_matchedMiddleware']);
+                }
+
                 if ($r === false) {
                     continue;
                 }

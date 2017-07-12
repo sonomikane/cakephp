@@ -39,11 +39,12 @@ class InflectedRoute extends Route
      *
      * @param string $url The URL to parse
      * @param string $method The HTTP method being matched.
+     * @param array $registeredMiddleware An array of registered middleware names.
      * @return array|false An array of request parameters, or false on failure.
      */
-    public function parse($url, $method = '')
+    public function parse($url, $method = '', $registeredMiddleware = [])
     {
-        $params = parent::parse($url, $method);
+        $params = parent::parse($url, $method, $registeredMiddleware);
         if (!$params) {
             return false;
         }
