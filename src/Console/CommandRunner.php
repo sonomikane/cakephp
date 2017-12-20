@@ -118,7 +118,6 @@ class CommandRunner
             'help' => HelpCommand::class,
         ]);
         $commands = $this->app->console($commands);
-        $commands = $this->app->plugins()->console($commands);
 
         if (!($commands instanceof CommandCollection)) {
             $type = getTypeName($commands);
