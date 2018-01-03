@@ -19,7 +19,9 @@ use Cake\Core\Configure;
 use Cake\Core\Exception\Exception as CakeException;
 use Cake\Core\InstanceConfigTrait;
 use Cake\Error\ExceptionRenderer;
+use Cake\Error\PHP7ErrorException;
 use Cake\Log\Log;
+use Error;
 use Exception;
 use Throwable;
 
@@ -59,7 +61,7 @@ class ErrorHandlerMiddleware
     /**
      * Exception render.
      *
-     * @var \Cake\Error\ExceptionRendererInterface|string|null
+     * @var \Cake\Error\ExceptionRendererInterface|callable|string|null
      */
     protected $exceptionRenderer;
 
@@ -155,6 +157,11 @@ class ErrorHandlerMiddleware
             $this->exceptionRenderer = $this->getConfig('exceptionRenderer') ?: ExceptionRenderer::class;
         }
 
+        // For PHP5 backwards compatibility
+        if ($exception instanceof Error) {
+            $exception = new PHP7ErrorException($exception);
+        }
+
         if (is_string($this->exceptionRenderer)) {
             $class = App::className($this->exceptionRenderer, 'Error');
             if (!$class) {
@@ -184,12 +191,9 @@ class ErrorHandlerMiddleware
             return;
         }
 
-        $skipLog = $this->getConfig('skipLog');
-        if ($skipLog) {
-            foreach ((array)$skipLog as $class) {
-                if ($exception instanceof $class) {
-                    return;
-                }
+        foreach ((array)$this->getConfig('skipLog') as $class) {
+            if ($exception instanceof $class) {
+                return;
             }
         }
 
